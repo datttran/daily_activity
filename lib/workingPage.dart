@@ -1,9 +1,12 @@
-import 'package:daily_activity/responsive.dart';
+import 'package:daily_activity/globals.dart';
+import 'package:daily_activity/popUp.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:slide_countdown_clock/slide_countdown_clock.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 
-var wPosition = <int>[1];
+Duration duration = Duration(seconds: 10);
+Duration end = Duration.zero;
+Color pauseColor = Colors.black;
 
 class WorkingPage extends StatefulWidget {
   @override
@@ -11,45 +14,153 @@ class WorkingPage extends StatefulWidget {
 }
 
 class _WorkingPageState extends State<WorkingPage> {
-  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
-  Duration _duration = Duration(minutes: 20);
+  List<Duration> wTimer = [begin, end];
+
+  bool clock_running = true;
+  bool result;
+
+  @override
+  void initState() {
+    super.initState();
+    print('new state');
+  }
+
+  endEvent() {
+    FlutterRingtonePlayer.play(
+      android: AndroidSounds.notification,
+      ios: IosSounds.glass,
+      looping: true, // Android only - API >= 28
+      volume: 0.1, // Android only - API >= 28
+      asAlarm: false, // Android only - all APIs
+    );
+    /*showDialog(
+        context: context,
+        builder: (BuildContext context) => Material(
+              color: Colors.transparent,
+              child: Center(
+                child: Column(
+                  children: [
+                    Container(
+                      height: 100,
+                      color: Colors.white,
+                      width: double.infinity,
+                      child: Center(child: Text('Complete', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 30))),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              FlutterRingtonePlayer.stop();
+
+                              Navigator.pop(context);
+                              begin = Duration(seconds: 5);
+                            },
+                            child: Container(
+                              height: 100,
+                              color: Colors.white,
+                              child: Center(child: Text('Break', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 30))),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            height: 100,
+                            color: Colors.white,
+                            child: Center(child: Text('Sprint', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 30))),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            )).then((value) => print(value));*/
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: Colors.black,
-        body: ListView.builder(
-            itemCount: wPosition.length,
-            itemBuilder: (context, position) {
-              return Center(
-                child: Container(
-                  color: Colors.white,
-                  height: height * 7,
-                  width: width * 60,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: SlideCountdownClock(
-                      duration: _duration * wPosition[position],
-                      slideDirection: SlideDirection.Down,
-                      separator: ":",
-                      textStyle: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      onDone: () {
-                        print('Done');
-                        wPosition = List.filled(wPosition.length, 0);
-                        setState(() {
-                          _duration = Duration(seconds: 10);
-
-                          print(wPosition);
-                          wPosition = <int>[...wPosition, 1];
-                          print(wPosition);
-                        });
-                      },
-                    ),
+        body: Stack(children: [
+          Container(
+            padding: EdgeInsets.only(top: 150),
+            width: double.infinity,
+            child: Visibility(
+              visible: workingTime.inSeconds / 20 > 0,
+              child: FractionallySizedBox(
+                alignment: Alignment.center,
+                widthFactor: .2 * (workingTime.inSeconds / 20).round() > 1 ? 0.9 : .2 * (workingTime.inSeconds / 20).round(),
+                child: FittedBox(
+                  fit: BoxFit.fitWidth,
+                  child: Text(
+                    'Strike x ' + (workingTime.inSeconds / 20).round().toString(),
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
-              );
-            }));
+              ),
+            ),
+          ),
+          Center(
+            child: Container(
+              height: 100,
+              width: double.infinity,
+              color: Colors.white,
+              child: Column(
+                children: [
+                  TweenAnimationBuilder<Duration>(
+                      key: UniqueKey(),
+                      duration: begin,
+                      tween: Tween(begin: begin, end: end),
+                      onEnd: () async {
+                        endEvent();
+                        if (begin.inSeconds == 20) {
+                          if ((workingTime.inSeconds / 20).round() > 3) {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => PopOnFire())).then((value) => setState(() {}));
+                          } else {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => PopWorking())).then((value) => setState(() {}));
+                          }
+                        } else if (begin.inSeconds > 20) {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => PopOnFire())).then((value) => setState(() {}));
+                        } else {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => PopBreak())).then((value) => setState(() {}));
+                        }
+                      },
+                      builder: (BuildContext context, Duration value, Widget child) {
+                        final minutes = value.inMinutes;
+                        final seconds = value.inSeconds % 60;
+                        return Column(
+                          children: [
+                            Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 5),
+                                child: Text('$minutes:$seconds', textAlign: TextAlign.center, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 30))),
+                            IconButton(
+                              onPressed: () {
+                                if (clock_running) {
+                                  setState(() {
+                                    end = Duration(seconds: value.inSeconds);
+                                    pauseColor = Colors.deepPurpleAccent;
+                                  });
+                                  begin = Duration(seconds: value.inSeconds);
+                                  clock_running = false;
+                                } else {
+                                  setState(() {
+                                    end = Duration.zero;
+                                    pauseColor = Colors.black;
+                                  });
+                                  clock_running = true;
+                                }
+                              },
+                              icon: Icon(Icons.pause),
+                              color: pauseColor,
+                            )
+                          ],
+                        );
+                      }),
+                ],
+              ),
+            ),
+          )
+        ]));
   }
 }
