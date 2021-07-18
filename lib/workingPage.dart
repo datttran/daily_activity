@@ -172,8 +172,7 @@ class _WorkingPageState extends State<WorkingPage> {
           ),
           Container(
               child: RiveAnimation.network(
-            'https://public.rive.app/community/runtime-files/451-838-flame-loading-bar.riv',
-            animations: ['Flame preview'],
+            'https://public.rive.app/community/runtime-files/612-1182-fire.riv',
           )),
         ]));
   }
