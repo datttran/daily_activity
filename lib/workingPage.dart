@@ -3,10 +3,13 @@ import 'package:daily_activity/popUp.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+import 'package:rive/rive.dart';
 
+//
 Duration duration = Duration(seconds: 10);
 Duration end = Duration.zero;
 Color pauseColor = Colors.black;
+Icon pauseIcon = Icon(Icons.pause);
 
 class WorkingPage extends StatefulWidget {
   @override
@@ -30,8 +33,8 @@ class _WorkingPageState extends State<WorkingPage> {
       android: AndroidSounds.notification,
       ios: IosSounds.glass,
       looping: true, // Android only - API >= 28
-      volume: 0.1, // Android only - API >= 28
-      asAlarm: false, // Android only - all APIs
+      volume: 1, // Android only - API >= 28
+      asAlarm: true, // Android only - all APIs
     );
     /*showDialog(
         context: context,
@@ -88,16 +91,20 @@ class _WorkingPageState extends State<WorkingPage> {
             width: double.infinity,
             child: Visibility(
               visible: workingTime.inSeconds / 20 > 0,
-              child: FractionallySizedBox(
-                alignment: Alignment.center,
-                widthFactor: .2 * (workingTime.inSeconds / 20).round() > 1 ? 0.9 : .2 * (workingTime.inSeconds / 20).round(),
-                child: FittedBox(
-                  fit: BoxFit.fitWidth,
-                  child: Text(
-                    'Strike x ' + (workingTime.inSeconds / 20).round().toString(),
-                    style: TextStyle(color: Colors.white),
+              child: Column(
+                children: [
+                  FractionallySizedBox(
+                    alignment: Alignment.center,
+                    widthFactor: .2 * (workingTime.inSeconds / 20).round() > 1 ? 0.9 : .2 * (workingTime.inSeconds / 20).round(),
+                    child: FittedBox(
+                      fit: BoxFit.fitWidth,
+                      child: Text(
+                        'Strike x ' + (workingTime.inSeconds / 20).round().toString(),
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
@@ -140,6 +147,7 @@ class _WorkingPageState extends State<WorkingPage> {
                                   setState(() {
                                     end = Duration(seconds: value.inSeconds);
                                     pauseColor = Colors.deepPurpleAccent;
+                                    pauseIcon = Icon(Icons.play_arrow);
                                   });
                                   begin = Duration(seconds: value.inSeconds);
                                   clock_running = false;
@@ -147,11 +155,12 @@ class _WorkingPageState extends State<WorkingPage> {
                                   setState(() {
                                     end = Duration.zero;
                                     pauseColor = Colors.black;
+                                    pauseIcon = Icon(Icons.pause);
                                   });
                                   clock_running = true;
                                 }
                               },
-                              icon: Icon(Icons.pause),
+                              icon: pauseIcon,
                               color: pauseColor,
                             )
                           ],
@@ -160,7 +169,12 @@ class _WorkingPageState extends State<WorkingPage> {
                 ],
               ),
             ),
-          )
+          ),
+          Container(
+              child: RiveAnimation.network(
+            'https://public.rive.app/community/runtime-files/451-838-flame-loading-bar.riv',
+            animations: ['Flame preview'],
+          )),
         ]));
   }
 }
